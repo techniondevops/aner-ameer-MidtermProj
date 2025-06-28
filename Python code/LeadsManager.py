@@ -5,14 +5,19 @@ def Get():
     return inventory
 
 def Add(inventory , item):
-    ++idCnt
-    inventory[item[idCnt]] = item
+    global idCnt
+    idCnt+= 1
+    inventory[idCnt] = item
     return inventory
     
 def Remove(inventory, itemid):
-    inventory.pop(itemid)   
+    if itemid in inventory:
+        inventory.pop(itemid)   
+        
     return inventory
     
 def Update(inventory, itemid, new_item):
-    inventory[itemid] = new_item
+    if itemid in inventory:
+        inventory[itemid] = new_item
+
     return inventory
