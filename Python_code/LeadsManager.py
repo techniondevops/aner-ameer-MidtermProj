@@ -7,6 +7,7 @@ def Get():
 def Add(inventory , item):
     global idCnt
     idCnt+= 1
+    item['id'] = idCnt  # Assign a unique ID to the item
     inventory[idCnt] = item
     return inventory
     
