@@ -1,18 +1,34 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+# Ensure the app directory is in the path
+import LeadsManager
 
-  # Ensure the Python_code directory is in the path
-import Python_code.LeadsManager as LeadsManager
-
-app = Flask(__name__)
+# Import the LeadsManager from the app module
+app = Flask(
+    __name__,
+    template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')),
+    static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../static'))
+)
 # Configure CORS to allow all origins, methods, and headers
 CORS(app, resources={
     r"/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly list methods
+        "allow_headers": ["Content-Type", "Authorization"],      # Specify allowed headers
+        "expose_headers": ["Content-Range", "X-Total-Count"],    # Headers client can read
+        "supports_credentials": True,                            # Allow credentials
+        "max_age": 3600                                         # Cache preflight for 1 hour
     }
 })
+
+@app.after_request
+def add_header(response):
+    """Add headers to disable caching."""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/leads', methods=['GET'])
 def get_leads():
@@ -26,7 +42,7 @@ def create_lead():
     lead = request.get_json()
     if not lead:
         return jsonify({"error": "No data provided"}), 400
-    
+
     updated_inventory = LeadsManager.Add(LeadsManager.Get(), lead)
     return jsonify({"message": "Lead created successfully", "data": lead}), 201
 
@@ -42,9 +58,13 @@ def update_lead(lead_id):
     lead = request.get_json()
     if not lead:
         return jsonify({"error": "No data provided"}), 400
-    
+
     updated_inventory = LeadsManager.Update(LeadsManager.Get(), lead_id, lead)
     return jsonify({"message": "Lead updated successfully", "data": lead}), 200
 
+@app.route('/')
+def home():
+    return render_template("index.html")
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

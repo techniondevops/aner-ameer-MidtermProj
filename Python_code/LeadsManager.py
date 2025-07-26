@@ -1,24 +1,21 @@
-idCnt = 0
-inventory = {}
-
+# inventory = [{ "name": "John Doe", "email": "jone@gmail.com", "phone": "123-456-7890","department": "Sales"}]
+inventory = []
 def Get():
     return inventory
 
 def Add(inventory , item):
-    global idCnt
-    idCnt+= 1
-    item['id'] = idCnt  # Assign a unique ID to the item
-    inventory[idCnt] = item
+    # Assign a unique ID to the item
+    inventory.append(item) 
     return inventory
     
 def Remove(inventory, itemid):
-    if itemid in inventory:
+    if itemid < len(inventory) and itemid >= 0:
         inventory.pop(itemid)   
         
     return inventory
     
 def Update(inventory, itemid, new_item):
-    if itemid in inventory:
+    if itemid < len(inventory) and itemid >= 0:
         inventory[itemid] = new_item
 
     return inventory

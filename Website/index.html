@@ -6,20 +6,21 @@
     <title>Leads Manager (midterm proj)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
     <script src="controller.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <script src="leadsService.js"></script>
+    <link rel="stylesheet" href='styles.css'>
 </head>
 <body ng-controller="CrudController">
     <div class="container">
         <h1>Leads Management System</h1>
-        
+
         <!-- Alert Messages -->
         <div ng-show="message.text" class="alert" ng-class="{'alert-success': message.type === 'success', 'alert-error': message.type === 'error'}">
-            {{message.text}}
+            <span ng-bind="message.text"></span>
         </div>
-        
+
         <!-- Add/Edit User Form -->
         <div class="form-section">
-            <h2>{{isEditing ? 'Edit User' : 'Add New User'}}</h2>
+            <h2 ng-bind="isEditing ? 'Edit User' : 'Add New User'"></h2>
             <form name="userForm" ng-submit="saveUser()" novalidate>
                 <div class="form-group">
                     <label for="name">Name:</label>
@@ -28,7 +29,7 @@
                         Name is required
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" ng-model="currentUser.email" required>
@@ -36,35 +37,32 @@
                         Valid email is required
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="phone">Phone:</label>
                     <input type="text" id="phone" name="phone" ng-model="currentUser.phone">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="department">Department:</label>
                     <input type="text" id="department" name="department" ng-model="currentUser.department">
                 </div>
-                
-                <button type="submit" class="btn btn-primary" ng-disabled="userForm.$invalid">
-                    {{isEditing ? 'Update User' : 'Add User'}}
-                </button>
-                <button type="button" class="btn btn-secondary" ng-click="resetForm()" ng-show="isEditing">
-                    Cancel
-                </button>
+
+                <button type="submit" class="btn btn-primary" ng-disabled="userForm.$invalid"
+                    ng-bind="isEditing ? 'Update User' : 'Add User'"></button>
+                <button type="button" class="btn btn-secondary" ng-click="resetForm()" ng-show="isEditing">Cancel</button>
             </form>
         </div>
-        
+
         <!-- Search Box -->
         <div class="search-box">
             <input type="text" ng-model="searchText" placeholder="Search users..." />
         </div>
-        
+
         <!-- Users Table -->
         <div class="table-container">
-            <h2>Users List ({{filteredUsers.length}} users)</h2>
-            <table ng-show="users.length > 0">
+            <h2>Users List (<span ng-bind="filteredUsers.length"></span> users)</h2>
+            <table ng-show="usersOBJ.length > 0">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -76,34 +74,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr ng-repeat="user in filteredUsers = (users | filter:searchText)">
-                        <td>{{user.id}}</td>
-                        <td>{{user.name}}</td>
-                        <td>{{user.email}}</td>
-                        <td>{{user.phone}}</td>
-                        <td>{{user.department}}</td>
+                    <tr ng-repeat="user in usersOBJ">
+                        <td >{{$index + 1}}</td>
+                        <td ng-bind="user.name"></td>
+                        <td ng-bind="user.email"></td>
+                        <td ng-bind="user.phone"></td>
+                        <td ng-bind="user.department"></td>
                         <td>
-                            <button class="btn btn-warning" ng-click="editUser(user)">Edit</button>
-                            <button class="btn btn-danger" ng-click="confirmDelete(user)">Delete</button>
+                            <button class="btn btn-warning" ng-click="editUser($index,user)">Edit</button>
+                            <button class="btn btn-danger" ng-click="deleteUser($index)">Delete</button>
                         </td>
                     </tr>
                 </tbody>
             </table>
-            <div ng-show="users.length === 0" style="text-align: center; color: #666; margin-top: 20px;">
+            <div ng-show="usersOBJ.length == 0" style="text-align: center; color: #666; margin-top: 20px;">
                 <p>No users found. Add some users to get started!</p>
             </div>
         </div>
-        
-        <!-- Delete Confirmation Modal -->
-        <div class="modal" ng-class="{'show': showDeleteModal}">
-            <div class="modal-content">
-                <span class="close" ng-click="showDeleteModal = false">&times;</span>
-                <h3>Confirm Delete</h3>
-                <p>Are you sure you want to delete user "{{userToDelete.name}}"?</p>
-                <button class="btn btn-danger" ng-click="deleteUser()">Yes, Delete</button>
-                <button class="btn btn-secondary" ng-click="showDeleteModal = false">Cancel</button>
-            </div>
-        </div>
+
     </div>
 </body>
 </html>
