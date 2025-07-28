@@ -62,6 +62,17 @@ def update_lead(lead_id):
     updated_inventory = LeadsManager.Update(LeadsManager.Get(), lead_id, lead)
     return jsonify({"message": "Lead updated successfully", "data": lead}), 200
 
+
+app.route('/close/<int:deal_id>', methods=['POST'])
+def update_lead(deal_id):
+    """Update a lead by ID"""
+    lead = request.get_json()
+    if not lead:
+        return jsonify({"error": "No data provided"}), 400
+
+    updated_inventory = LeadsManager.CloseDeal(LeadsManager.Get(), deal_id)
+    return jsonify({"message": "Lead updated successfully", "data": lead}), 200
+
 @app.route('/')
 def home():
     return render_template("index.html")

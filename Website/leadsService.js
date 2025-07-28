@@ -42,6 +42,14 @@ angular.module('crudApp')
         return $http(req).then(successCallback, rejectedCallback_FullResponse);
     }
 
+    function deleteLead(idx) {
+        var req = {
+            method: 'POST',
+            url: APIrootURL +"/close" +"/"+ idx,
+        }
+        return $http(req).then(successCallback, rejectedCallback_FullResponse);
+    }
+
     /***   genric handler for success operation     **/
     function successCallback(response) {
         return response.data;

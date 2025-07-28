@@ -72,6 +72,16 @@ angular.module('crudApp', [])
                 });
         };
 
+        $scope.closeDeal = function(dealID) {
+            LeadsService.closeDeal(dealID)
+                .then(function(response) {
+                  $scope.GetLeads(); 
+                })
+                .catch(function(error) {
+                    $scope.showMessage('Error loading users: ' + error.data.error, 'error');
+                });
+        };
+
         $scope.resetForm = function() {
             $scope.currentUser = {};
             $scope.currentUserIdx = null;
