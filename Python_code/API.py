@@ -7,9 +7,10 @@ import LeadsManager
 # Import the LeadsManager from the app module
 app = Flask(
     __name__,
-    template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')),
-    static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../static'))
+    template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../Website')),
+    static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../Website'))
 )
+
 # Configure CORS to allow all origins, methods, and headers
 CORS(app, resources={
     r"/*": {
@@ -63,19 +64,14 @@ def update_lead(lead_id):
     return jsonify({"message": "Lead updated successfully", "data": lead}), 200
 
 
-app.route('/close/<int:deal_id>', methods=['POST'])
-def update_lead(deal_id):
-    """Update a lead by ID"""
-    lead = request.get_json()
-    if not lead:
-        return jsonify({"error": "No data provided"}), 400
-
+@app.route('/leads/close/<int:deal_id>', methods=['POST'])
+def close_deal(deal_id):
     updated_inventory = LeadsManager.CloseDeal(LeadsManager.Get(), deal_id)
-    return jsonify({"message": "Lead updated successfully", "data": lead}), 200
+    return jsonify({"message": "Deal closed successfully"}), 200
 
 @app.route('/')
-def home():
-    return render_template("index.html")
+def index():
+    return render_template('index.html')
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)

@@ -19,20 +19,20 @@ angular.module('crudApp', [])
                         .then(function(response) {
                             $scope.resetForm();
                             $scope.GetLeads();
-                            $scope.showMessage('User updated successfully!', 'success');
+                            console.log('User updated successfully!', 'success');
                         })
                         .catch(function(error) {
-                            $scope.showMessage('Error updating user: ' + error.data.error, 'error');
+                            console.error('Error updating user: ' + error.data.error, 'error');
                         });
                 } else {
                     LeadsService.createLead($scope.currentUser)
                         .then(function(response) {
                             $scope.resetForm();
                             $scope.GetLeads();
-                            $scope.showMessage('User created successfully!', 'success');
+                            console.log('User created successfully!', 'success');
                         })
                         .catch(function(error) {
-                            $scope.showMessage('Error adding user: ' + error.data.error, 'error');
+                            console.error('Error adding user: ' + error.data.error, 'error');
                         });
                 }
             }
@@ -56,7 +56,7 @@ angular.module('crudApp', [])
                     $scope.GetLeads();
                 })
                 .catch(function(error) {
-                    $scope.showMessage('Error deleting user: ' + error.data.error, 'error');
+                    console.error('Error deleting user: ' + error.data.error, 'error');
                 });
         };
 
@@ -68,7 +68,7 @@ angular.module('crudApp', [])
                     $scope.filteredUsers = $scope.usersOBJ;
                 })
                 .catch(function(error) {
-                    $scope.showMessage('Error loading users: ' + error.data.error, 'error');
+                    console.error('Error loading users: ' + error.data.error, 'error');
                 });
         };
 
@@ -78,7 +78,7 @@ angular.module('crudApp', [])
                   $scope.GetLeads(); 
                 })
                 .catch(function(error) {
-                    $scope.showMessage('Error loading users: ' + error.data.error, 'error');
+                    console.error('Error loading users: ' + error.data.error, 'error');
                 });
         };
 

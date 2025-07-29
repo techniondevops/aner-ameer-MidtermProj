@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leads Manager (midterm proj)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
-    <script src="controller.js"></script>
+    <!-- ...existing code... -->
+    <!-- <script src="controller.js"></script>
     <script src="leadsService.js"></script>
-    <link rel="stylesheet" href='styles.css'>
+    <link rel="stylesheet" href="styles.css"> -->
+    <script src="{{ url_for('static', filename='controller.js') }}"></script>
+    <script src="{{ url_for('static', filename='leadsService.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- ...existing code... -->
 </head>
 <body ng-controller="CrudController">
     <div class="container">
@@ -20,78 +25,87 @@
 
         <!-- Add/Edit User Form -->
         <div class="form-section">
-            <h2 ng-bind="isEditing ? 'Edit User' : 'Add New User'"></h2>
+            <h2 ng-bind="isEditing ? 'Edit Lead' : 'Add New Lead'"></h2>
             <form name="userForm" ng-submit="saveUser()" novalidate>
                 <div class="form-group">
                     <label for="name">Name:</label>
                     <input type="text" id="name" name="name" ng-model="currentUser.name" required>
-                    <div ng-show="userForm.name.$touched && userForm.name.$invalid" style="color: red; font-size: 12px;">
+                    <div ng-show="userForm.name.$touched && userForm.name.$invalid" class="error-message">
                         Name is required
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" ng-model="currentUser.email" required>
-                    <div ng-show="userForm.email.$touched && userForm.email.$invalid" style="color: red; font-size: 12px;">
-                        Valid email is required
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" ng-model="currentUser.last_name" required>
+                    <div ng-show="userForm.last_name.$touched && userForm.last_name.$invalid" class="error-message">
+                        Last name is required
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="phone">Phone:</label>
-                    <input type="text" id="phone" name="phone" ng-model="currentUser.phone">
+                    <label for="deal-id">Deal ID:</label>
+                    <input type="number" id="deal-id" name="deal-id" ng-model="currentUser['deal-id']" required>
+                    <div ng-show="userForm['deal-id'].$touched && userForm['deal-id'].$invalid" class="error-message">
+                        Deal ID is required
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="description">description:</label>
-                    <input type="text" id="description" name="description" ng-model="currentUser.description">
+                    <label for="est_value">Estimated Value:</label>
+                    <input type="number" id="est_value" name="est_value" ng-model="currentUser.est_value" required>
+                    <div ng-show="userForm.est_value.$touched && userForm.est_value.$invalid" class="error-message">
+                        Estimated value is required
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary" ng-disabled="userForm.$invalid"
-                    ng-bind="isEditing ? 'Update User' : 'Add User'"></button>
+                    ng-bind="isEditing ? 'Update Lead' : 'Add Lead'"></button>
                 <button type="button" class="btn btn-secondary" ng-click="resetForm()" ng-show="isEditing">Cancel</button>
             </form>
         </div>
 
-        <!-- Search Box -->
-        <div class="search-box">
-            <input type="text" ng-model="searchText" placeholder="Search users..." />
-        </div>
-
-        <!-- Users Table -->
+        <!-- Leads Table -->
         <div class="table-container">
-            <h2>Users List (<span ng-bind="filteredUsers.length"></span> users)</h2>
+            <h2>Leads List (<span ng-bind="filteredUsers.length"></span> leads)</h2>
             <table ng-show="usersOBJ.length > 0">
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Description</th>
+                        <th>Last Name</th>
+                        <th>Deal ID</th>
+                        <th>Status</th>
+                        <th>Est. Value</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-repeat="user in usersOBJ">
-                        <td >{{$index + 1}}</td>
+                        <td ng-bind="$index + 1"></td>
                         <td ng-bind="user.name"></td>
-                        <td ng-bind="user.email"></td>
-                        <td ng-bind="user.phone"></td>
-                        <td ng-bind="user.description"></td>
+                        <td ng-bind="user.last_name"></td>
+                        <td ng-bind="user['deal-id']"></td>
+                        <td>
+                            <span class="status-badge" ng-class="{'active': user.is_active}"
+                                ng-bind="user.is_active ? 'Active' : 'Inactive'">
+                            </span>
+                        </td>
+                        <td ng-bind="user.est_value | currency"></td>
                         <td>
                             <button class="btn btn-warning" ng-click="editUser($index,user)">Edit</button>
                             <button class="btn btn-danger" ng-click="deleteUser($index)">Delete</button>
+                            <button class="btn btn-success" 
+                                    ng-if="user.is_active"
+                                    ng-click="closeDeal(user['deal-id'])">
+                                Close Deal
+                            </button>
                         </td>
                     </tr>
                 </tbody>
             </table>
-            <div ng-show="usersOBJ.length == 0" style="text-align: center; color: #666; margin-top: 20px;">
-                <p>No users found. Add some users to get started!</p>
-            </div>
+            <!-- ...existing code... -->
         </div>
-
     </div>
 </body>
 </html>

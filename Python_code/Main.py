@@ -2,7 +2,7 @@ import LeadsManager
 #this is a test file to check if the code is working
 
 
-def get_lead_from_user(is_edit=False):
+def get_lead_from_user():
     lead = {}
     lead['name'] = input("Enter lead's name: ") 
     lead['last_name'] = input("Enter lead's last name: ")
@@ -22,29 +22,7 @@ def print_leads(inventory):
     print("\n")
 
 def Main():
-    # inventory = LeadsManager.Get()
-    # print("Initial Inventory:", inventory)
-
-    # LeadsManager.Add(inventory, {"name":"ori ", "last_name": "shani","deal-id": 1, "is_active": True, "est_value": 100000})
-    # print("After Adding Item 1:", inventory)
-
-    # LeadsManager.Add(inventory, {"name":"yoni ", "last_name": "golan","deal-id": 2, "is_active": False, "est_value": 100000})
-    # print("After Adding Item 2:", inventory)
-
-    # LeadsManager.Update(inventory, 0, {"name":"ori ", "last_name": "shani","deal-id": 1, "is_active": True, "est_value": 100000})
-    # print("After Updating Item 1:", inventory)
-
-    # LeadsManager.Add(inventory, {"name":"ori ", "last_name": "shani","deal-id": 1, "is_active": True, "est_value": 100000})
-    # print("After Adding Item 1:", inventory)
-
-    # LeadsManager.Remove(inventory, 1)
-    # print("After Removing Item 2:", inventory)
-
-    # LeadsManager.Update(inventory, 0,{"name":"yoni ", "last_name": "golan", "deal-id": 1, "is_active": True, "est_value": 100000})
-    # print("After Updating Item 2 When removed :", inventory)
-
-    # LeadsManager.CloseDeal(inventory, 1)
-    # print("After closing deal 1 :", inventory)
+   
     inventory = LeadsManager.Get()
 
     while True:
@@ -71,7 +49,7 @@ def Main():
                 
                 case 'update':
                     id = int(input("Enter the IDX of the lead to update: "))
-                    LeadsManager.Update(inventory, id, get_lead_from_user(True))
+                    LeadsManager.Update(inventory, id, get_lead_from_user())
                 
                 case 'close':
                     id = int(input("Enter the ID of the Deal to close: "))

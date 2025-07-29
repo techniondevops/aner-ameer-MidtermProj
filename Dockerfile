@@ -7,8 +7,7 @@ RUN pip install -r requirements.txt
 
 COPY Python_code/ ./Python_code/
 
-ENV FLASK_APP=Python_code/API.py
-ENV FLASK_ENV=development
+COPY Website/ ./Website/
 
 EXPOSE 5000
 

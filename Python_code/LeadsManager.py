@@ -4,6 +4,7 @@ def Get():
     return inventory
 
 def Add(inventory , item):
+    item['is_active'] = IsDealActive(inventory, item['deal-id'])  # Ensure is_active is set based on deal-id
     # Assign a unique ID to the item
     validate_item(item)
     inventory.append(item) 

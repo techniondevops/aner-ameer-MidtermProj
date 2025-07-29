@@ -6,6 +6,7 @@ angular.module('crudApp')
             updateLead: updateLead,
             createLead: createLead,
             deleteLead: deleteLead,
+            closeDeal: closeDeal,
         }
 
     function getLeads() {
@@ -42,14 +43,22 @@ angular.module('crudApp')
         return $http(req).then(successCallback, rejectedCallback_FullResponse);
     }
 
-    function deleteLead(idx) {
+    function closeDeal(idx) {
         var req = {
             method: 'POST',
-            url: APIrootURL +"/close" +"/"+ idx,
+            url: APIrootURL +"/close/"+ idx,
         }
         return $http(req).then(successCallback, rejectedCallback_FullResponse);
     }
 
+    function closeDeal(dealId) {
+            var req = {
+                method: 'POST',
+                url: APIrootURL + '/close/' + dealId,
+                
+            }
+            return $http(req).then(successCallback, rejectedCallback_FullResponse);
+        }
     /***   genric handler for success operation     **/
     function successCallback(response) {
         return response.data;
