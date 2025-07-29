@@ -1,24 +1,24 @@
 import os
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-# Ensure the app directory is in the path
 import LeadsManager
 
-# Import the LeadsManager from the app module
+# Set correct path to the 'Website' folder for templates
 app = Flask(
     __name__,
-    template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')),
-    static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../static'))
+    template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../Website')),
+    static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../Website'))
 )
+
 # Configure CORS to allow all origins, methods, and headers
 CORS(app, resources={
     r"/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly list methods
-        "allow_headers": ["Content-Type", "Authorization"],      # Specify allowed headers
-        "expose_headers": ["Content-Range", "X-Total-Count"],    # Headers client can read
-        "supports_credentials": True,                            # Allow credentials
-        "max_age": 3600                                         # Cache preflight for 1 hour
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Range", "X-Total-Count"],
+        "supports_credentials": True,
+        "max_age": 3600
     }
 })
 
@@ -62,10 +62,9 @@ def update_lead(lead_id):
     updated_inventory = LeadsManager.Update(LeadsManager.Get(), lead_id, lead)
     return jsonify({"message": "Lead updated successfully", "data": lead}), 200
 
-
-app.route('/close/<int:deal_id>', methods=['POST'])
-def update_lead(deal_id):
-    """Update a lead by ID"""
+@app.route('/close/<int:deal_id>', methods=['POST'])
+def close_deal(deal_id):
+    """Close a lead deal"""
     lead = request.get_json()
     if not lead:
         return jsonify({"error": "No data provided"}), 400
