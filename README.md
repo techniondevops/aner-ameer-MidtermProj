@@ -138,5 +138,5 @@ This project was built and deployed manually for educational and demonstration p
 
 ## 📬 Contact
 
-**Developer**: Ameer  
-📧 [Insert your email or GitHub profile link]
+**Developers**: Aner & Ameer
+
