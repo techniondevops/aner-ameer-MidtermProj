@@ -1,0 +1,267 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Leads Manager App - High Availability Web Application Deployment'
+
+Parameters:
+  ImageURI:
+    Type: String
+    Description: ECR image path - not used in this version
+    Default: "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/it-asset-management:latest"
+
+Resources:
+  # Private network setup
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: Leads-Manager-VPC
+
+  # Internet access
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Leads-Manager-VPC-IGW
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # First data center subnet
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public Subnet AZ1
+
+  # Second data center subnet
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public Subnet AZ2
+
+  # Routing table
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Public Routes
+
+  # Route to internet
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment 
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # Connect subnets to routing
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  # Server firewall rules
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: WebServerSecurityGroup
+      GroupDescription: Firewall for Flask servers
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: WebServer-SG
+
+  # Load balancer firewall
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: LoadBalancerSecurityGroup
+      GroupDescription: Firewall for load balancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0 
+      Tags:
+        - Key: Name
+          Value: LoadBalancer-SG
+
+  # Server template - SIMPLIFIED BUILD FROM GITHUB
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: Leads-Manager-LaunchTemplate
+      LaunchTemplateData:
+        ImageId: ami-0c02fb55956c7d316
+        InstanceType: t3.micro
+        SecurityGroupIds:
+          - !Ref WebServerSecurityGroup  
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            # AWS Academy compatible startup script
+            
+            # Update system and install requirements
+            yum update -y
+            yum install -y docker git
+            
+            # Start Docker
+            service docker start
+            chkconfig docker on
+            usermod -a -G docker ec2-user
+            
+            # Wait for Docker to be ready
+            sleep 10
+            
+            # Clone repository and build app (no ECR dependency)
+            cd /home/ec2-user
+            git clone https://github.com/anern13/MidtermProj.git
+            cd leads-manager
+            
+            # Build Docker image from source
+            docker build -f docker/Dockerfile -t leads-manager .
+            
+            # Run the application
+            docker run -d -p 8080:5000 --restart unless-stopped --name leads-manager-app leads-manager
+            
+            # Wait for app to start and create health check
+            sleep 30
+            
+            # Test if app is running and create status file
+            if curl -f http://localhost:8080/ > /dev/null 2>&1; then
+                echo "SUCCESS: App is running" > /tmp/app-status
+            else
+                echo "FAILED: App is not responding" > /tmp/app-status
+                # Try to restart if failed
+                docker restart it-asset-app
+                sleep 15
+                if curl -f http://localhost:8080/ > /dev/null 2>&1; then
+                    echo "SUCCESS: App restarted successfully" > /tmp/app-status
+                else
+                    echo "FAILED: App restart failed" > /tmp/app-status
+                fi
+            fi
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: Leads-Manager-Instance
+
+  # Load balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: Leads-Manager-ALB
+      Scheme: internet-facing
+      Type: application         
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Leads-Manager-ALB
+
+  # Target group for health checks
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${AWS::StackName}-TG"
+      Port: 8080
+      Protocol: HTTP          
+      VpcId: !Ref VPC
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP             
+      HealthCheckIntervalSeconds: 30       
+      HealthCheckTimeoutSeconds: 5          
+      HealthyThresholdCount: 2             
+      UnhealthyThresholdCount: 5          
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-TG" 
+
+  # Load balancer listener
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup    
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP      
+
+  # Auto scaling group
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: Leads-Manager-ASG
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: 2            
+      MaxSize: 4            
+      DesiredCapacity: 2    
+      TargetGroupARNs:
+        - !Ref TargetGroup
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 600  # Increased to 10 minutes for build time
+      Tags:
+        - Key: Name
+          Value: Leads-Manager-ASG-Instance
+          PropagateAtLaunch: true  
+
+Outputs:
+  LoadBalancerURL:
+    Description: Your application URL
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerURL'
+
+  VPCId:
+    Description: VPC ID for troubleshooting
+    Value: !Ref VPC
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC'
