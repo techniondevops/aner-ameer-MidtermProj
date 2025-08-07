@@ -73,38 +73,20 @@ docker tag midterm-proj:latest 495307862605.dkr.ecr.us-east-1.amazonaws.com/midt
 docker push 495307862605.dkr.ecr.us-east-1.amazonaws.com/midterm-proj:latest
 ```
 
----
+export aws_access_key_id=[KEY_ID]
+export aws_secret_access_key=[ACCESS_KEY]
+export aws_session_token=[SECERT_KEY]
 
-### 2. Elastic Beanstalk (EB)
+aws ecr create-repository --repository-name leads-manager-app --region us-east-1
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 192060932952.dkr.ecr.us-east-1.amazonaws.com
+docker tag leads-manager-app:latest 192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager-app:latest
+docker push 192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager-app:latest
 
-- Chose deployment via **AWS Console**
-- Platform: **Docker running on 64bit Amazon Linux 2**
-- Configuration Preset: **Single instance (free tier eligible)**
-- Deployed using a `Dockerrun.aws.json` file zipped alone in a `.zip`
-
-#### 📄 Dockerrun.aws.json
-
-```json
-{
-  "AWSEBDockerrunVersion": 1,
-  "Image": {
-    "Name": "495307862605.dkr.ecr.us-east-1.amazonaws.com/midterm-proj:latest",
-    "Update": "true"
-  },
-  "Ports": [
-    {
-      "ContainerPort": 8080
-    }
-  ]
-}
-```
-
-- Uploaded via **Upload and Deploy**
-- Resulting public URL:
-  ```
-  http://<your-environment>.elasticbeanstalk.com
-  ```
-
+aws cloudformation deploy \
+  --template-file D:\\MidtermProj\\aws\\cloudformation.yml \
+  --stack-name leads-manager-stack \
+  --parameter-overrides ImageURI=192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager:latest \
+  --capabilities CAPABILITY_NAMED_IAM
 ---
 
 ## ⚠️ Troubleshooting & Lessons Learned
