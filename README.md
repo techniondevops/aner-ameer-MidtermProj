@@ -1,7 +1,7 @@
-# Midterm Project – DevOps Deployment
+# 🚀 Leads Manager – Cloud Deployment (AWS Academy Sandbox)
 
-Welcome to the **Midterm DevOps Project** repository for DeployNova!  
-This project showcases a Python-based application containerized with Docker and deployed on AWS using Elastic Beanstalk and ECR.
+This guide walks you from **💻 code → 🧪 local test → ☁️ AWS deployment** using **CloudFormation** with an **Application Load Balancer (ALB)**, an **Auto Scaling Group (ASG)**, and **no SSH/ECR** (perfect for the AWS Academy sandbox).  
+Your EC2 instances **clone this repo**, **build the Docker image locally**, and **run Flask on port 5000**. The ALB listens on port 80 and forwards traffic to 5000.
 
 ---
 
@@ -9,7 +9,7 @@ This project showcases a Python-based application containerized with Docker and 
 
 - **Topic**: Contact Manager
 - **Language**: Python
-- **Architecture**: Modular (`main.py` + `functions.py`)
+- **Architecture**: Monolithic
 - **Interface**: Flask-based web UI
 - **Storage**: In-memory using Python dictionaries/lists
 - **Features**:
@@ -23,11 +23,17 @@ This project showcases a Python-based application containerized with Docker and 
 
 ```
 .
-├── app/
-│   ├── main.py
-│   ├── functions.py
-│   └── templates/
-│       └── index.html
+├── aws/
+│   ├── cloudformation.yaml
+├── Python_Code/
+│   ├── API.py
+│   ├── LeadsManager.py
+│   ├── Main.py
+├── Website/
+│   ├── controller.js
+│   ├── index.html
+│   ├── leadsSerivce.js
+│   ├── style.css
 ├── Dockerfile
 ├── requirements.txt
 └── Dockerrun.aws.json (used for deployment)
@@ -35,90 +41,114 @@ This project showcases a Python-based application containerized with Docker and 
 
 ---
 
-## 🐳 Docker Configuration
-
-### Dockerfile
-
-Ubuntu-based image that installs Flask, sets the working directory, and runs the app on port 8080.
-
-```Dockerfile
-FROM python:3.10-slim
-WORKDIR /app
-COPY . /app
-RUN pip install -r requirements.txt
-EXPOSE 8080
-CMD ["python", "app/main.py"]
-```
-
-### Flask Run Command
-
-Your Flask app must start like this to work in Elastic Beanstalk:
-
-```python
-app.run(host="0.0.0.0", port=8080)
-```
-
----
-
-## 🚀 AWS Deployment (Manual via Console)
-
-### 1. AWS ECR
-
-- Created a private repository in **Elastic Container Registry**: `midterm-proj`
-- Built and pushed the Docker image:
+## 🐳 Docker Sanity Local Run
 
 ```bash
-docker build -t midterm-proj .
-docker tag midterm-proj:latest 495307862605.dkr.ecr.us-east-1.amazonaws.com/midterm-proj:latest
-docker push 495307862605.dkr.ecr.us-east-1.amazonaws.com/midterm-proj:latest
+# 🏗 Build container
+docker build -t leads-manager-app:latest .
+
+# ▶️ Run container
+docker run --rm -p 5000:5000 leads-manager-app:latest
+
+# 🌐 Visit
+http://localhost:5000
 ```
 
-export aws_access_key_id=[KEY_ID]
-export aws_secret_access_key=[ACCESS_KEY]
-export aws_session_token=[SECERT_KEY]
-
-aws ecr create-repository --repository-name leads-manager-app --region us-east-1
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 192060932952.dkr.ecr.us-east-1.amazonaws.com
-docker tag leads-manager-app:latest 192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager-app:latest
-docker push 192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager-app:latest
-
-aws cloudformation deploy \
-  --template-file D:\\MidtermProj\\aws\\cloudformation.yml \
-  --stack-name leads-manager-stack \
-  --parameter-overrides ImageURI=192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager:latest \
-  --capabilities CAPABILITY_NAMED_IAM
----
-
-## ⚠️ Troubleshooting & Lessons Learned
-
-- ❌ Attempting "High Availability" failed due to IAM sandbox limits on Auto Scaling
-- ✅ Switching to **Single Instance** solved the issue
-- ❌ Initial 503 errors appeared due to Flask listening on port 5000 instead of 8080
-- ✅ Fixed by:
-  - Updating Flask to listen on `port=8080`
-  - Rebuilding Docker image
-  - Using correct `Dockerrun.aws.json`
-- ❌ EB errors about version = 3 fixed by using `"AWSEBDockerrunVersion": 1`
+You should see the UI, and clicking actions should hit `/leads` on the same origin.
 
 ---
 
-## ✅ Final Deliverables
+## 📜 3) CloudFormation template
 
-- ✅ Python app with modular logic
-- ✅ Web UI using Flask
-- ✅ Dockerized (with Dockerfile)
-- ✅ Image pushed to AWS ECR
-- ✅ Successfully deployed using AWS Elastic Beanstalk
+The template:
+- 🏗 Creates **VPC**, two public subnets + internet gateway + route table
+- 🌍 Creates **ALB** (port 80) + Target Group (port 5000)
+- 🔒 Creates Security Groups (ALB open :80 to world; instance allows :5000 from ALB only)
+- ⚙️ Launch Template → installs Docker + Git → clones repo → builds & runs container
+- 🔄 Auto Scaling Group (**Min/Desired/Max = 1**) → auto-attaches to Target Group
+
+> ✅ With ASG, the instance registers automatically → no 503 “no healthy targets”.
+
+---
+
+## 🚀4) Deploy the stack
+
+```bash
+aws cloudformation deploy   --stack-name leads-manager-sandbox-app   --template-file cloudformation.yml
+```
+
+Wait **2–4 minutes** for `git clone → docker build → docker run`.
 
 ---
 
-## 🧠 Developer Notes
+## 🔍 5) Get ALB URL & test
 
-This project was built and deployed manually for educational and demonstration purposes, simulating a DevOps pipeline using containerization and cloud-native deployment tools.
+```bash
+ALB=$(aws cloudformation describe-stacks   --stack-name leads-manager-sandbox-app   --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerDNSName'].OutputValue"   --output text)
+echo "http://$ALB"
+```
+
+Open in browser → UI & API should work.
 
 ---
+
+## 🩺6) Check target health (503 troubleshooting)
+
+```bash
+TG_ARN=$(aws elbv2 describe-target-groups   --names TargetGroup   --query 'TargetGroups[0].TargetGroupArn' --output text)
+
+aws elbv2 describe-target-health --target-group-arn "$TG_ARN"   --query 'TargetHealthDescriptions[].{Id:Target.Id,State:TargetHealth.State,Reason:TargetHealth.Reason,Desc:TargetHealth.Description}'   --output table
+```
+
+- `initial` → wait a bit  
+- `unhealthy` → see troubleshooting
+
+---
+
+## 🔄7) Updating the app
+
+**Option A – Recreate instance**  
+```bash
+aws autoscaling update-auto-scaling-group   --auto-scaling-group-name <ASG-NAME> --desired-capacity 0
+sleep 15
+aws autoscaling update-auto-scaling-group   --auto-scaling-group-name <ASG-NAME> --desired-capacity 1
+```
+
+**Option B – Redeploy stack**  
+```bash
+aws cloudformation deploy   --stack-name leads-manager-sandbox-app   --template-file cloudformation.yml
+```
+
+---
+
+## 🧹 9) Teardown
+
+```bash
+aws cloudformation delete-stack --stack-name leads-manager-sandbox-app
+aws cloudformation wait stack-delete-complete --stack-name leads-manager-sandbox-app
+```
+
+---
+
+## 🛠 Troubleshooting
+
+**❌ ROLLBACK_COMPLETE** → run:
+```bash
+aws cloudformation describe-stack-events --stack-name leads-manager-sandbox-app   --query "StackEvents[?ResourceStatus=='CREATE_FAILED'].[Timestamp,LogicalResourceId,ResourceStatusReason]"   --output table
+```
+- Bad AMI → replace `ImageId`
+- SG/VPC conflicts → delete stack, retry
+
+**❌ ALB 503** → check Target Group health, ensure container is listening on :5000, repo is public
+
+**❌ UI works but buttons fail** → check `Website/leadsService.js` uses `/leads`
+
+---
+
+💡 **Tip:** Keep your repo public so EC2 can `git clone` without keys.
+
+🎯 You now have a **sandbox-safe, reproducible** AWS deployment pipeline!
 
 ## 📬 Contact
 
 **Developers**: Aner & Ameer
-
