@@ -5,7 +5,7 @@ Parameters:
   ImageURI:
     Type: String
     Description: ECR image path - not used in this version
-    Default: "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/it-asset-management:latest"
+    Default: "192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager-app:latest"
 
 Resources:
   # Private network setup
@@ -97,8 +97,8 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
+          FromPort: 5000
+          ToPort: 5000
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
         - IpProtocol: tcp
           FromPort: 22
@@ -184,7 +184,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub "${AWS::StackName}-TG"
-      Port: 8080
+      Port: 5000
       Protocol: HTTP
       VpcId: !Ref VPC
       HealthCheckPath: /
