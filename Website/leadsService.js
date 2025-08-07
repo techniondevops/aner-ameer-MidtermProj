@@ -1,6 +1,6 @@
 angular.module('crudApp')
     .service('LeadsService', ['$http', function($http) {
-        const APIrootURL = "http://127.0.0.1:8080/leads";
+        const APIrootURL = "/leads";
         return {
             getLeads: getLeads,
             updateLead: updateLead,
@@ -16,7 +16,7 @@ angular.module('crudApp')
         }
         return $http(req).then(successCallback, rejectedCallback_FullResponse);
     }
-   
+
     function updateLead(idx, lead) {
         var req = {
             method: 'PUT',
@@ -25,7 +25,7 @@ angular.module('crudApp')
         }
         return $http(req).then(successCallback, rejectedCallback_FullResponse);
     }
-    
+
     function createLead(lead) {
         var req = {
             method: 'POST',
@@ -34,7 +34,7 @@ angular.module('crudApp')
         }
         return $http(req).then(successCallback, rejectedCallback_FullResponse);
     }
-   
+
     function deleteLead(idx) {
         var req = {
             method: 'DELETE',
@@ -55,7 +55,7 @@ angular.module('crudApp')
             var req = {
                 method: 'POST',
                 url: APIrootURL + '/close/' + dealId,
-                
+
             }
             return $http(req).then(successCallback, rejectedCallback_FullResponse);
         }
