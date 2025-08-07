@@ -130,11 +130,19 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
 
+  # Attach the instance to the Target Group (fixes 503)
+  TargetAttachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroupAttachment
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !Ref EC2Instance
+      Port: !Ref ContainerPort
+
   # ---------------- EC2 Instance (build & run locally; no KeyPair) ----------------
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c02fb55956c7d316   # Amazon Linux 2 in us-east-1; change if sandbox region differs
+      ImageId: ami-0c02fb55956c7d316   # Amazon Linux 2 in us-east-1; change if your sandbox region differs
       InstanceType: !Ref InstanceType
       SubnetId: !Ref PublicSubnet1
       SecurityGroupIds: [ !Ref InstanceSecurityGroup ]
