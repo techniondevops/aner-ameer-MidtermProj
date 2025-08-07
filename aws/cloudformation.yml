@@ -151,34 +151,9 @@ Resources:
             # Wait for Docker to be ready
             sleep 10
             
-            # Clone repository and build app (no ECR dependency)
-            cd /home/ec2-user
-            git clone https://github.com/anern13/MidtermProj.git
-            cd leads-manager
-            
-            # Build Docker image from source
-            docker build -f docker/Dockerfile -t leads-manager .
-            
             # Run the application
-            docker run -d -p 8080:5000 --restart unless-stopped --name leads-manager-app leads-manager
+            docker run -p 8080:5000 192060932952.dkr.ecr.us-east-1.amazonaws.com/leads-manager-app
             
-            # Wait for app to start and create health check
-            sleep 30
-            
-            # Test if app is running and create status file
-            if curl -f http://localhost:8080/ > /dev/null 2>&1; then
-                echo "SUCCESS: App is running" > /tmp/app-status
-            else
-                echo "FAILED: App is not responding" > /tmp/app-status
-                # Try to restart if failed
-                docker restart it-asset-app
-                sleep 15
-                if curl -f http://localhost:8080/ > /dev/null 2>&1; then
-                    echo "SUCCESS: App restarted successfully" > /tmp/app-status
-                else
-                    echo "FAILED: App restart failed" > /tmp/app-status
-                fi
-            fi
         TagSpecifications:
           - ResourceType: instance
             Tags:
