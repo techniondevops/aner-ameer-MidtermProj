@@ -1,15 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Leads Manager - ALB -> EC2. Build Docker image on instance (no ECR/IAM), Flask serves frontend+API on :5000'
+Description: 'Leads Manager - ALB -> EC2. Build Docker image on instance (no ECR/IAM), Flask serves frontend+API on :5000. No SSH/KeyPair.'
 
 Parameters:
-  RepoUrl:
-    Type: String
-    Description: Public Git repo URL containing Dockerfile at project root
-    Default: "https://github.com/anern13/MidtermProj.git"
-  RepoSubdir:
-    Type: String
-    Description: Optional subdirectory inside repo (leave empty if Dockerfile is at repo root)
-    Default: ""
   ImageName:
     Type: String
     Default: "leads-manager-app"
@@ -19,10 +11,6 @@ Parameters:
   InstanceType:
     Type: String
     Default: t2.micro
-  KeyName:
-    Type: String
-    Description: Your EC2 KeyPair name (for SSH). If you don’t need SSH, you can remove it and the SG rule.
-    Default: my-keypair
 
 Resources:
   # ---------------- VPC & Networking ----------------
@@ -100,17 +88,13 @@ Resources:
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow app port from ALB and SSH (optional)
+      GroupDescription: Allow app port from ALB only (no SSH)
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: !Ref ContainerPort
           ToPort: !Ref ContainerPort
           SourceSecurityGroupId: !Ref ALBSecurityGroup
-        - IpProtocol: tcp
-          FromPort: 22          # optional; remove if you don’t need SSH
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -146,15 +130,14 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
 
-  # ---------------- EC2 Instance (build & run locally) ----------------
+  # ---------------- EC2 Instance (build & run locally; no KeyPair) ----------------
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c02fb55956c7d316   # Amazon Linux 2 (us-east-1). If sandbox is another region, change AMI.
+      ImageId: ami-0c02fb55956c7d316   # Amazon Linux 2 in us-east-1; change if sandbox region differs
       InstanceType: !Ref InstanceType
       SubnetId: !Ref PublicSubnet1
       SecurityGroupIds: [ !Ref InstanceSecurityGroup ]
-      KeyName: !Ref KeyName
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -165,28 +148,22 @@ Resources:
           systemctl enable docker
           systemctl start docker
 
-          # clone app
+          # clone or update app repo
           cd /home/ec2-user
           if [ ! -d app ]; then
-            git clone ${RepoUrl} app
+            git clone https://github.com/anern13/MidtermProj.git app
           else
             cd app && git pull || true
             cd ..
           fi
 
-          # enter repo (and optional subdir)
+          # build & run container
           cd /home/ec2-user/app
-          if [ ! -z "${RepoSubdir}" ]; then
-            cd ${RepoSubdir}
-          fi
-
-          # build & run
           docker build -t ${ImageName}:latest .
-          # stop old container if exists
           docker rm -f ${ImageName} || true
           docker run -d --name ${ImageName} --restart=always -p ${ContainerPort}:${ContainerPort} ${ImageName}:latest
 
-          # sanity
+          # basic sanity
           sleep 3
           curl -fsS http://localhost:${ContainerPort}/ || true
 
