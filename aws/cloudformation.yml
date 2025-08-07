@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Leads Manager - ALB -> EC2. Build Docker image on instance (no ECR/IAM), Flask serves frontend+API on :5000. No SSH/KeyPair.'
+Description: 'Leads Manager - ALB -> EC2 via ASG (sandbox-compatible). Builds & runs Docker app on :5000. No SSH/KeyPair.'
 
 Parameters:
   ImageName:
@@ -130,50 +130,51 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
 
-  # Attach the instance to the Target Group (fixes 503)
-  TargetAttachment:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroupAttachment
+  # ---------------- Launch Template ----------------
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
     Properties:
-      TargetGroupArn: !Ref TargetGroup
-      TargetId: !Ref EC2Instance
-      Port: !Ref ContainerPort
+      LaunchTemplateData:
+        ImageId: ami-0c02fb55956c7d316  # Amazon Linux 2 in us-east-1
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds: [ !Ref InstanceSecurityGroup ]
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            set -euxo pipefail
+            yum update -y
+            amazon-linux-extras enable docker
+            yum install -y docker git
+            systemctl enable docker
+            systemctl start docker
 
-  # ---------------- EC2 Instance (build & run locally; no KeyPair) ----------------
-  EC2Instance:
-    Type: AWS::EC2::Instance
+            cd /home/ec2-user
+            git clone https://github.com/anern13/MidtermProj.git app || true
+            cd app
+            git pull || true
+
+            docker build -t ${ImageName}:latest .
+            docker rm -f ${ImageName} || true
+            docker run -d --name ${ImageName} --restart=always -p ${ContainerPort}:${ContainerPort} ${ImageName}:latest
+
+            sleep 3
+            curl -fsS http://localhost:${ContainerPort}/ || true
+
+  # ---------------- Auto Scaling Group ----------------
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      ImageId: ami-0c02fb55956c7d316   # Amazon Linux 2 in us-east-1; change if your sandbox region differs
-      InstanceType: !Ref InstanceType
-      SubnetId: !Ref PublicSubnet1
-      SecurityGroupIds: [ !Ref InstanceSecurityGroup ]
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          set -euxo pipefail
-          yum update -y
-          amazon-linux-extras enable docker
-          yum install -y docker git
-          systemctl enable docker
-          systemctl start docker
-
-          # clone or update app repo
-          cd /home/ec2-user
-          if [ ! -d app ]; then
-            git clone https://github.com/anern13/MidtermProj.git app
-          else
-            cd app && git pull || true
-            cd ..
-          fi
-
-          # build & run container
-          cd /home/ec2-user/app
-          docker build -t ${ImageName}:latest .
-          docker rm -f ${ImageName} || true
-          docker run -d --name ${ImageName} --restart=always -p ${ContainerPort}:${ContainerPort} ${ImageName}:latest
-
-          # basic sanity
-          sleep 3
-          curl -fsS http://localhost:${ContainerPort}/ || true
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: 1
+      MaxSize: 1
+      DesiredCapacity: 1
+      TargetGroupARNs:
+        - !Ref TargetGroup
 
 Outputs:
   LoadBalancerDNSName:
