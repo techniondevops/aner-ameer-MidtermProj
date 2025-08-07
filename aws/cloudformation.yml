@@ -5,7 +5,7 @@ Parameters:
   RepoUrl:
     Type: String
     Description: Public Git repo URL containing Dockerfile at project root
-    Default: "https://github.com/AmeerSDev/midtermproj-fe-be.git"
+    Default: "https://github.com/anern13/MidtermProj.git"
   RepoSubdir:
     Type: String
     Description: Optional subdirectory inside repo (leave empty if Dockerfile is at repo root)
