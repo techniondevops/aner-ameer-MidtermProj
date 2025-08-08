@@ -36,7 +36,6 @@ Your EC2 instances **clone this repo**, **build the Docker image locally**, and 
 │   ├── style.css
 ├── Dockerfile
 ├── requirements.txt
-└── Dockerrun.aws.json (used for deployment)
 ```
 
 ---
