@@ -59,14 +59,14 @@ You should see the UI, and clicking actions should hit `/leads` on the same orig
 ---
 
 ---
-## 3) Setting AWS Lab Credentials
+## 0) Setting AWS Lab Credentials
 ```bash
 export AWS_ACCESS_KEY_ID=<access-key-data>
 export AWS_SECRET_ACCESS_KEY=<secret-key-data>
 export AWS_SESSION_TOKEN=<token-data>
 ```
 ---
-## 4) Pushing ECR to AWS (in-case needed)
+## 1) Pushing ECR to AWS (in-case needed)
 Variables (replace if yours differ):
 ```bash
 AWS_REGION=us-east-1
@@ -89,7 +89,7 @@ docker tag leads-manager-app:latest ${IMAGE_URI}
 docker push ${IMAGE_URI}
 ```
 --
-## 📜 3) CloudFormation template
+## 📜 2) CloudFormation template
 
 The template:
 - 🏗 Creates **VPC**, two public subnets + internet gateway + route table
@@ -102,17 +102,28 @@ The template:
 
 ---
 
-## 🚀4) Deploy the stack
+## 🚀 3) Deploy the stack
 
 ```bash
-aws cloudformation deploy   --stack-name leads-manager-sandbox-app   --template-file cloudformation.yml
+aws cloudformation deploy \
+  --stack-name leads-manager-sandbox-app \
+  --template-file cloudformation.yml
 ```
 
 Wait **2–4 minutes** for `git clone → docker build → docker run`.
 
 ---
 
-## 🔍 5) Get ALB URL & test
+## 🔍 4) Get ALB URL & test
+
+```bash
+# get ALB URL
+aws cloudformation describe-stacks \
+  --stack-name leads-manager-sandbox-app \
+  --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerDNSName'].OutputValue" \
+  --output text
+```
+or
 
 ```bash
 ALB=$(aws cloudformation describe-stacks   --stack-name leads-manager-sandbox-app   --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerDNSName'].OutputValue"   --output text)
@@ -123,7 +134,7 @@ Open in browser → UI & API should work.
 
 ---
 
-## 🩺6) Check target health (503 troubleshooting)
+## 🩺5) Check target health (503 troubleshooting)
 
 ```bash
 TG_ARN=$(aws elbv2 describe-target-groups   --names TargetGroup   --query 'TargetGroups[0].TargetGroupArn' --output text)
@@ -136,7 +147,7 @@ aws elbv2 describe-target-health --target-group-arn "$TG_ARN"   --query 'TargetH
 
 ---
 
-## 🔄7) Updating the app
+## 🔄6) Updating the app
 
 **Option A – Recreate instance**  
 ```bash
@@ -152,7 +163,7 @@ aws cloudformation deploy   --stack-name leads-manager-sandbox-app   --template-
 
 ---
 
-## 🧹 9) Teardown
+## 🧹 7) Teardown
 
 ```bash
 aws cloudformation delete-stack --stack-name leads-manager-sandbox-app
