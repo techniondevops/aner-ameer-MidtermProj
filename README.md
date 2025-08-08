@@ -7,7 +7,7 @@ Your EC2 instances **clone this repo**, **build the Docker image locally**, and 
 
 ## 🧩 Project Overview
 
-- **Topic**: Contact Manager
+- **Topic**: Leads Manager
 - **Language**: Python
 - **Architecture**: Monolithic
 - **Interface**: Flask-based web UI
