@@ -58,6 +58,37 @@ You should see the UI, and clicking actions should hit `/leads` on the same orig
 
 ---
 
+---
+## 3) Setting AWS Lab Credentials
+```bash
+export AWS_ACCESS_KEY_ID=<access-key-data>
+export AWS_SECRET_ACCESS_KEY=<secret-key-data>
+export AWS_SESSION_TOKEN=<token-data>
+```
+---
+## 4) Pushing ECR to AWS (in-case needed)
+Variables (replace if yours differ):
+```bash
+AWS_REGION=us-east-1
+ACCOUNT_ID=192060932952
+REPO=leads-manager-app
+IMAGE_TAG=latest
+IMAGE_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}:${IMAGE_TAG}
+```
+
+```bash
+aws ecr create-repository --repository-name ${REPO} --region ${AWS_REGION} || true
+```
+Login + tag + push:
+
+```bash
+aws ecr get-login-password --region ${AWS_REGION} \
+ | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+docker tag leads-manager-app:latest ${IMAGE_URI}
+docker push ${IMAGE_URI}
+```
+--
 ## 📜 3) CloudFormation template
 
 The template:
